@@ -1,0 +1,50 @@
+<?php
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $itemNumber = $_POST['itemNumber'] ;
+    $customerId = $_POST['customerId'];
+
+    echo "Received POST request.\n";
+    echo "Item number: $itemNumber\n";
+    echo "Customer ID: $customerId\n";
+
+    $filePath = 'xml/auction.xml';
+    if (file_exists($filePath)) {
+        echo "XML file exists.\n";
+        $xml = simplexml_load_file($filePath);
+
+        $itemFound = false;
+        foreach ($xml->itemListing as $item) {
+            if ((string)$item->itemNumber === $itemNumber) {
+                $itemFound = true;
+                $item->bidAmount = (float)$item->buyItNowPrice;
+                $item->status = "sold";
+                $item->bidderEmail = $customerId;
+                break;
+            }
+        }
+
+        if ($itemFound) {
+            echo "Item found and updated in XML.\n";
+        } else {
+            echo "Item not found in XML.\n";
+        }
+
+        // Save changes to the XML file
+        $xml->asXML($filePath);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Thank you for purchasing this item.',
+        ]);
+    } else {
+        echo "Error: XML file does not exist.\n";
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error: Could not find the XML file.',
+        ]);
+    }
+} else {
+    echo "Not a POST request.\n";
+}
+?>
